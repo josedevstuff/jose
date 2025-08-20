@@ -1,0 +1,35 @@
+-- LocalScript inside StarterGui
+
+-- Create the button
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 200, 0, 50)
+button.Position = UDim2.new(0.5, -100, 0.5, -25) -- centered
+button.Text = "Activate Push"
+button.Parent = screenGui
+
+-- Variables
+local loopRunning = false
+
+button.MouseButton1Click:Connect(function()
+	if loopRunning then return end -- Prevent multiple loops
+	loopRunning = true
+
+	task.spawn(function()
+		while loopRunning do
+			local playerData = player:FindFirstChild("PlayerData")
+			if playerData then
+				local pushValue = playerData:FindFirstChild("Push")
+				if pushValue and pushValue:IsA("BoolValue") then
+					pushValue.Value = true
+				end
+			end
+			task.wait(1) -- loop every second
+		end
+	end)
+end)
