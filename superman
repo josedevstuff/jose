@@ -1,0 +1,195 @@
+-- Services
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- State
+local flyEnabled = false
+local speed = 1 -- UI "speeds" in the original
+local maxSpeed = 50
+local gyro, vel -- BodyGyro / BodyVelocity
+local upHeld, downHeld = false, false
+
+-- UI ------------------------------------------------------------
+local screen = Instance.new("ScreenGui")
+screen.Name = "FlyGUI_Clean"
+screen.ResetOnSpawn = false
+screen.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.AnchorPoint = Vector2.new(0, 0)
+frame.Position = UDim2.new(0, 20, 0, 200)
+frame.Size = UDim2.new(0, 170, 0, 140)
+frame.BackgroundTransparency = 0.15
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screen
+
+local function makeButton(name, text, pos)
+    local b = Instance.new("TextButton")
+    b.Name = name
+    b.Text = text
+    b.Font = Enum.Font.GothamSemibold
+    b.TextScaled = true
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    b.BorderSizePixel = 0
+    b.Size = UDim2.new(0, 50, 0, 28)
+    b.Position = pos
+    b.Parent = frame
+    return b
+end
+
+local label                       = Instance.new("TextLabel")
+label.Size                        = UDim2.new(0, 160, 0, 20)
+label.Position                    = UDim2.new(0, 5, 0, 5)
+label.BackgroundTransparency      = 1
+label.Text                        = "fly gui by me_ozoneYT"
+label.TextColor3                  = Color3.new(1, 1, 1)
+label.TextXAlignment              = Enum.TextXAlignment.Left
+label.Font                        = Enum.Font.Gotham
+label.TextSize                    = 12
+label.Parent                      = frame
+
+local speedLabel                  = Instance.new("TextLabel")
+speedLabel.Size                   = UDim2.new(0, 160, 0, 20)
+speedLabel.Position               = UDim2.new(0, 5, 0, 25)
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextColor3             = Color3.new(1, 1, 1)
+speedLabel.TextXAlignment         = Enum.TextXAlignment.Left
+speedLabel.Font                   = Enum.Font.Gotham
+speedLabel.TextSize               = 12
+speedLabel.Parent                 = frame
+
+local btnUp                       = makeButton("Up", "UP", UDim2.new(0, 5, 0, 55))
+local btnDown                     = makeButton("Down", "DOWN", UDim2.new(0, 60, 0, 55))
+local btnOnOff                    = makeButton("OnOff", "ON/OFF", UDim2.new(0, 115, 0, 55))
+local btnMinus                    = makeButton("Minus", "-", UDim2.new(0, 5, 0, 90))
+local btnPlus                     = makeButton("Plus", "+", UDim2.new(0, 60, 0, 90))
+
+local function updateSpeedLabel()
+    speedLabel.Text = ("speed: %d"):format(speed)
+end
+updateSpeedLabel()
+
+-- Helpers -------------------------------------------------------
+local function setHumanoidStatesEnabled(hum, enabled)
+    for _, state in ipairs(Enum.HumanoidStateType:GetEnumItems()) do
+        -- keep everything consistent with original (it toggled many states)
+        pcall(function()
+            hum:SetStateEnabled(state, enabled)
+        end)
+    end
+    if enabled then
+        hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+    else
+        hum:ChangeState(Enum.HumanoidStateType.Swimming)
+    end
+end
+
+local function startFly()
+    local chr = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hum = chr:FindFirstChildOfClass("Humanoid")
+    local root = chr:FindFirstChild("HumanoidRootPart") or chr:FindFirstChild("Torso")
+    if not (hum and root) then return end
+
+    setHumanoidStatesEnabled(hum, false)
+    hum.PlatformStand = true
+
+    gyro = Instance.new("BodyGyro")
+    gyro.P = 9e4
+    gyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    gyro.CFrame = root.CFrame
+    gyro.Parent = root
+
+    vel = Instance.new("BodyVelocity")
+    vel.Velocity = Vector3.new()
+    vel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    vel.Parent = root
+
+    -- Simple movement loop (R6/R15 agnostic using Humanoid.MoveDirection)
+    task.spawn(function()
+        local curSpeed = 0
+        while flyEnabled and chr.Parent and hum.Parent do
+            local move = hum.MoveDirection
+            if upHeld then
+                move = move + Vector3.new(0, 1, 0)
+            end
+            if downHeld then
+                move = move + Vector3.new(0, -1, 0)
+            end
+            if move.Magnitude > 0 then
+                curSpeed = math.min(maxSpeed, curSpeed + 0.5 + (curSpeed / maxSpeed))
+                vel.Velocity = move.Unit * curSpeed
+            else
+                curSpeed = math.max(0, curSpeed - 1)
+                vel.Velocity = Vector3.new()
+            end
+
+            gyro.CFrame = workspace.CurrentCamera.CFrame
+            RunService.Heartbeat:Wait()
+        end
+        -- cleanup
+        if gyro then
+            gyro:Destroy()
+            gyro = nil
+        end
+        if vel then
+            vel:Destroy()
+            vel = nil
+        end
+        hum.PlatformStand = false
+        setHumanoidStatesEnabled(hum, true)
+    end)
+end
+
+local function stopFly()
+    flyEnabled = false
+end
+
+-- UI wiring -----------------------------------------------------
+btnOnOff.MouseButton1Click:Connect(function()
+    flyEnabled = not flyEnabled
+    if flyEnabled then
+        StarterGui:SetCore("SendNotification", {
+            Title = "Fly",
+            Text = "Enabled",
+        })
+        startFly()
+    else
+        StarterGui:SetCore("SendNotification", {
+            Title = "Fly",
+            Text = "Disabled",
+        })
+        stopFly()
+    end
+end)
+
+btnUp.MouseButton1Down:Connect(function() upHeld = true end)
+btnUp.MouseButton1Up:Connect(function() upHeld = false end)
+btnDown.MouseButton1Down:Connect(function() downHeld = true end)
+btnDown.MouseButton1Up:Connect(function() downHeld = false end)
+
+btnPlus.MouseButton1Click:Connect(function()
+    speed = math.clamp(speed + 1, 1, 10)
+    maxSpeed = 50 * speed
+    updateSpeedLabel()
+end)
+
+btnMinus.MouseButton1Click:Connect(function()
+    speed = math.clamp(speed - 1, 1, 10)
+    maxSpeed = 50 * speed
+    updateSpeedLabel()
+end)
+
+-- Initial toast (mirrors original)
+pcall(function()
+    StarterGui:SetCore("SendNotification", {
+        Title = "Oh",
+        Text = "Greetings",
+        Icon = "rbxthumb://type=Asset&id=8108848796&w=150&h=150",
+    })
+end)
