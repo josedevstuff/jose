@@ -1,0 +1,151 @@
+-- LocalScript placed in StarterPlayerScripts
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ExplorerUI"
+screenGui.Parent = PlayerGui
+
+-- Toggle Button
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 100, 0, 40)
+toggleButton.Position = UDim2.new(0, 20, 0, 200)
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleButton.TextColor3 = Color3.new(1,1,1)
+toggleButton.Text = "Toggle Explorer"
+toggleButton.Parent = screenGui
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 500)
+mainFrame.Position = UDim2.new(0, 130, 0, 100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+
+-- Scrolling Frame for tree
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.Parent = mainFrame
+
+local rootLayout = Instance.new("UIListLayout")
+rootLayout.Parent = scrollFrame
+rootLayout.SortOrder = Enum.SortOrder.LayoutOrder
+rootLayout.Padding = UDim.new(0, 2)
+
+local instanceToFrame = {}
+
+-- Recursive tree builder
+local function createTreeItem(instance, parentContainer, indent)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 0)
+    container.AutomaticSize = Enum.AutomaticSize.Y
+    container.BackgroundTransparency = 1
+    container.Parent = parentContainer
+
+    local layout = Instance.new("UIListLayout")
+    layout.Parent = container
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 2)
+
+    local header = Instance.new("Frame")
+    header.Size = UDim2.new(1, 0, 0, 24)
+    header.BackgroundTransparency = 1
+    header.Parent = container
+
+    local expandButton = Instance.new("TextButton")
+    expandButton.Size = UDim2.new(0, 20, 1, 0)
+    expandButton.Position = UDim2.new(0, indent * 15, 0, 0)
+    expandButton.BackgroundTransparency = 1
+    expandButton.TextColor3 = Color3.new(1,1,1)
+    expandButton.Text = ""
+    expandButton.Parent = header
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, -30 - indent * 15, 1, 0)
+    nameLabel.Position = UDim2.new(0, 30 + indent * 15, 0, 0)
+    nameLabel.Text = instance.Name .. " [" .. instance.ClassName .. "]"
+    nameLabel.TextColor3 = Color3.new(1,1,1)
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Parent = header
+
+    local childrenFrame = Instance.new("Frame")
+    childrenFrame.Size = UDim2.new(1, 0, 0, 0)
+    childrenFrame.AutomaticSize = Enum.AutomaticSize.Y
+    childrenFrame.BackgroundTransparency = 1
+    childrenFrame.Parent = container
+
+    local childrenLayout = Instance.new("UIListLayout")
+    childrenLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    childrenLayout.Padding = UDim.new(0, 2)
+    childrenLayout.Parent = childrenFrame
+
+    local expanded = false
+    instanceToFrame[instance] = container
+
+    local function updateIndicator()
+        if #instance:GetChildren() > 0 then
+            expandButton.Text = expanded and "-" or "+"
+        else
+            expandButton.Text = ""
+        end
+    end
+
+    local function expand()
+        if expanded then return end
+        expanded = true
+        updateIndicator()
+        for _, child in ipairs(instance:GetChildren()) do
+            createTreeItem(child, childrenFrame, indent + 1)
+        end
+    end
+
+    local function collapse()
+        if not expanded then return end
+        expanded = false
+        updateIndicator()
+        childrenFrame:ClearAllChildren()
+        local childrenLayout = Instance.new("UIListLayout")
+        childrenLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        childrenLayout.Padding = UDim.new(0, 2)
+        childrenLayout.Parent = childrenFrame
+    end
+
+    expandButton.MouseButton1Click:Connect(function()
+        if expanded then collapse() else expand() end
+    end)
+
+    instance.ChildAdded:Connect(function(child)
+        updateIndicator()
+        if expanded then
+            createTreeItem(child, childrenFrame, indent + 1)
+        end
+    end)
+
+    instance.ChildRemoved:Connect(function(child)
+        updateIndicator()
+        if instanceToFrame[child] then
+            instanceToFrame[child]:Destroy()
+            instanceToFrame[child] = nil
+        end
+    end)
+
+    updateIndicator()
+    return container
+end
+
+-- Populate the root tree
+for _, child in ipairs(game:GetChildren()) do
+    createTreeItem(child, scrollFrame, 0)
+end
+
+-- Toggle visibility
+toggleButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+end)
