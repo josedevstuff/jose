@@ -1,0 +1,55 @@
+local AssetService = game:GetService("AssetService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- Create GUI container
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TeleportGui"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Use a ScrollingFrame in case there are many places
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(0, 250, 0, 400)
+scrollFrame.Position = UDim2.new(0, 20, 0, 100)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- will expand as we add buttons
+scrollFrame.ScrollBarThickness = 8
+scrollFrame.Parent = screenGui
+
+-- Layout so buttons stack neatly
+local layout = Instance.new("UIListLayout")
+layout.Parent = scrollFrame
+layout.Padding = UDim.new(0, 6)
+
+-- Get pages of places
+local placePages = AssetService:GetGamePlacesAsync()
+
+while true do
+	for _, place in placePages:GetCurrentPage() do
+		-- Create a button for each place
+		local button = Instance.new("TextButton")
+		button.Size = UDim2.new(1, -10, 0, 40) -- fit width of scroll frame
+		button.Text = "Teleport to " .. place.Name
+		button.BackgroundColor3 = Color3.fromRGB(50, 120, 200)
+		button.TextColor3 = Color3.new(1, 1, 1)
+		button.Font = Enum.Font.SourceSansBold
+		button.TextSize = 20
+		button.Parent = scrollFrame
+
+		-- Connect teleport action
+		button.MouseButton1Click:Connect(function()
+			TeleportService:Teleport(place.PlaceId, player)
+		end)
+	end
+
+	if placePages.IsFinished then
+		break
+	end
+	placePages:AdvanceToNextPageAsync()
+end
+
+-- Adjust scroll size to fit all buttons
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y)
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y)
+end)
