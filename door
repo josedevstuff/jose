@@ -1,17 +1,40 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+-- Create RemoteEvent on the server
+if RunService:IsServer() then
+    local event = ReplicatedStorage:FindFirstChild("ForceOpenDoor")
+    if not event then
+        event = Instance.new("RemoteEvent")
+        event.Name = "ForceOpenDoor"
+        event.Parent = ReplicatedStorage
+    end
+
+    -- Server logic: listen for client requests
+    event.OnServerEvent:Connect(function(player)
+        player:SetAttribute("TimeRemaining", 0)
+    end)
+
+    return -- stop server from running GUI code
+end
+
+-- Client-side code
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Create a simple ScreenGui
+-- Wait for server-created RemoteEvent
+local ForceOpenDoor = ReplicatedStorage:WaitForChild("ForceOpenDoor")
+
+-- Create GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DoorControlGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = PlayerGui
 
--- Create a button
 local button = Instance.new("TextButton")
 button.Size = UDim2.new(0, 200, 0, 50)
-button.Position = UDim2.new(0.5, -100, 0.8, 0) -- centered near bottom
+button.Position = UDim2.new(0.5, -100, 0.8, 0)
 button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 button.TextColor3 = Color3.fromRGB(255, 255, 255)
 button.TextScaled = true
@@ -19,8 +42,7 @@ button.Font = Enum.Font.SourceSansBold
 button.Text = "Open Door"
 button.Parent = screenGui
 
--- Button click logic
+-- Button click → ask server to set timer to 0
 button.MouseButton1Click:Connect(function()
-	-- Set TimeRemaining to 0 so your existing code triggers
-	LocalPlayer:SetAttribute("TimeRemaining", 0)
+    ForceOpenDoor:FireServer()
 end)
