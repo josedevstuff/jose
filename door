@@ -1,0 +1,26 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create a simple ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DoorControlGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = PlayerGui
+
+-- Create a button
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 200, 0, 50)
+button.Position = UDim2.new(0.5, -100, 0.8, 0) -- centered near bottom
+button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.TextScaled = true
+button.Font = Enum.Font.SourceSansBold
+button.Text = "Open Door"
+button.Parent = screenGui
+
+-- Button click logic
+button.MouseButton1Click:Connect(function()
+	-- Set TimeRemaining to 0 so your existing code triggers
+	LocalPlayer:SetAttribute("TimeRemaining", 0)
+end)
