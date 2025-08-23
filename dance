@@ -1,7 +1,7 @@
 while true do
 	local args = {
-		math.random(1, 100) -- generates a random number between 1 and 100 (you can change the range)
+		math.random(1, 999) -- generates a random number between 1 and 999 (you can change the range)
 	}
 	game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvents"):WaitForChild("DanceEvent"):FireServer(unpack(args))
-	wait(16) -- waits 16 seconds before looping again
+	wait(26) -- waits 26 seconds before looping again
 end
