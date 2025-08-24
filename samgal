@@ -1,0 +1,76 @@
+-- LocalScript inside StarterGui > ScreenGui
+
+--// Services
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+--// GUI Setup
+local screenGui = script.Parent
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 120, 0, 40)
+button.Position = UDim2.new(0.5, -60, 0.8, 0) -- center-ish
+button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+button.Text = "Teleport"
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Font = Enum.Font.SourceSansBold
+button.TextSize = 20
+button.Parent = screenGui
+
+-- Make button draggable
+local dragging, dragInput, dragStart, startPos
+button.Active = true
+button.Draggable = true -- Old property (works but deprecated in some cases)
+
+-- Custom drag system (to ensure it always works)
+button.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = button.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+button.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+--// Teleport Logic
+local teleporting = false
+
+button.MouseButton1Click:Connect(function()
+	if teleporting then return end
+	teleporting = true
+
+	local collectibles = workspace:WaitForChild("Collectibles")
+
+	-- Loop through all models inside Collectibles
+	for _, model in ipairs(collectibles:GetChildren()) do
+		local collider = model:FindFirstChild("Collider")
+		if collider and collider:IsA("Part") then
+			-- Teleport player to collider position
+			humanoidRootPart.CFrame = collider.CFrame + Vector3.new(0, 5, 0) -- offset above
+			wait(1) -- wait between teleports (adjust as needed)
+		end
+	end
+
+	teleporting = false
+end)
