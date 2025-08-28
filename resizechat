@@ -9,10 +9,15 @@ local guiName = string.char(67,104,97,116,32,83,112,121,32,66,121,32,55,115,111,
 local gui = CoreGui:WaitForChild(guiName)
 local frame = gui:WaitForChild("Frame")
 
--- Create a resize handle (top-left corner)
+-- Move clear button to the top-left corner
+local clearbtn = frame:GetChildren()[4]
+clearbtn.Position = UDim2.new(0, 0, 0, 0) -- top-left
+clearbtn.Size = UDim2.new(0, 25, 0, 25) -- touch friendly
+
+-- Create a resize handle (bottom-right corner)
 local resizeHandle = Instance.new("Frame")
 resizeHandle.Size = UDim2.new(0, 25, 0, 25) -- touch friendly
-resizeHandle.Position = UDim2.new(0, 0, 0, 0) -- top-left
+resizeHandle.Position = UDim2.new(1, -25, 1, -25) -- bottom-right
 resizeHandle.AnchorPoint = Vector2.new(0, 0)
 resizeHandle.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
 resizeHandle.BorderSizePixel = 1
