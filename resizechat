@@ -2,13 +2,14 @@
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 
+-- Path
 local guiName = string.char(67,104,97,116,32,83,112,121,32,66,121,32,55,115,111,110,101)
 local frame = CoreGui[guiName].Frame
 
 -- Create a resize handle (a small square at the bottom-right corner)
 local resizeHandle = Instance.new("Frame")
-resizeHandle.Size = UDim2.new(0, 15, 0, 15) -- small square
-resizeHandle.Position = UDim2.new(1, -15, 1, -15) -- bottom-right
+resizeHandle.Size = UDim2.new(0, 25, 0, 25) -- bigger square (easier on touch)
+resizeHandle.Position = UDim2.new(1, -25, 1, -25) -- bottom-right
 resizeHandle.AnchorPoint = Vector2.new(0, 0)
 resizeHandle.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
 resizeHandle.BorderSizePixel = 1
@@ -16,34 +17,59 @@ resizeHandle.Parent = frame
 
 -- Variables
 local resizing = false
-local lastMousePos
+local lastPos
 
--- When the player clicks the resize handle
+-- Function to start resizing
+local function beginResize(pos)
+	resizing = true
+	lastPos = pos
+end
+
+-- Function to stop resizing
+local function endResize()
+	resizing = false
+end
+
+-- Function to update frame while resizing
+local function updateResize(pos)
+	if resizing and lastPos then
+		local delta = pos - lastPos
+		lastPos = pos
+		frame.Size = UDim2.new(0, frame.Size.X.Offset + delta.X, 0, frame.Size.Y.Offset + delta.Y)
+		resizeHandle.Position = UDim2.new(1, -25, 1, -25)
+	end
+end
+
+-- Mouse input
 resizeHandle.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		resizing = true
-		lastMousePos = UserInputService:GetMouseLocation()
+		beginResize(UserInputService:GetMouseLocation())
 	end
 end)
 
--- Stop resizing when the player releases the mouse
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		resizing = false
+		endResize()
 	end
 end)
 
--- Update frame size while dragging
 UserInputService.InputChanged:Connect(function(input)
-	if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-		local mousePos = UserInputService:GetMouseLocation()
-		local delta = mousePos - lastMousePos
-		lastMousePos = mousePos
-
-		-- Apply size change
-		frame.Size = UDim2.new(0, frame.Size.X.Offset + delta.X, 0, frame.Size.Y.Offset + delta.Y)
-
-		-- Keep the resize handle stuck to bottom-right
-		resizeHandle.Position = UDim2.new(1, -15, 1, -15)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		updateResize(UserInputService:GetMouseLocation())
 	end
+end)
+
+-- Touch input
+resizeHandle.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		beginResize(input.Position)
+	end
+end)
+
+UserInputService.TouchEnded:Connect(function()
+	endResize()
+end)
+
+UserInputService.TouchMoved:Connect(function(input)
+	updateResize(input.Position)
 end)
