@@ -14,9 +14,9 @@ local clearbtn = frame:GetChildren()[4]
 clearbtn.Position = UDim2.new(0, 0, 0, 0) -- top-left
 clearbtn.Size = UDim2.new(0, 25, 0, 25) -- touch friendly
 
--- Create a resize handle (bottom-right corner)
+-- Create a resize handle (a small square at the bottom-right corner)
 local resizeHandle = Instance.new("Frame")
-resizeHandle.Size = UDim2.new(0, 25, 0, 25) -- touch friendly
+resizeHandle.Size = UDim2.new(0, 25, 0, 25) -- bigger square (easier on touch)
 resizeHandle.Position = UDim2.new(1, -25, 1, -25) -- bottom-right
 resizeHandle.AnchorPoint = Vector2.new(0, 0)
 resizeHandle.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
@@ -27,29 +27,24 @@ resizeHandle.Parent = frame
 local resizing = false
 local lastPos
 
--- Start resizing
+-- Function to start resizing
 local function beginResize(pos)
 	resizing = true
 	lastPos = pos
 end
 
--- Stop resizing
+-- Function to stop resizing
 local function endResize()
 	resizing = false
 end
 
--- Update frame while resizing
+-- Function to update frame while resizing
 local function updateResize(pos)
 	if resizing and lastPos then
 		local delta = pos - lastPos
 		lastPos = pos
-
-		-- Adjust size & position relative to top-left
-		frame.Size = UDim2.new(0, frame.Size.X.Offset - delta.X, 0, frame.Size.Y.Offset - delta.Y)
-		frame.Position = UDim2.new(0, frame.Position.X.Offset + delta.X, 0, frame.Position.Y.Offset + delta.Y)
-
-		-- Keep handle pinned to top-left
-		resizeHandle.Position = UDim2.new(0, 0, 0, 0)
+		frame.Size = UDim2.new(0, frame.Size.X.Offset + delta.X, 0, frame.Size.Y.Offset + delta.Y)
+		resizeHandle.Position = UDim2.new(1, -25, 1, -25)
 	end
 end
 
