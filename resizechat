@@ -4,11 +4,14 @@ local CoreGui = game:GetService("CoreGui")
 
 -- Path
 local guiName = string.char(67,104,97,116,32,83,112,121,32,66,121,32,55,115,111,110,101)
-local frame = CoreGui[guiName].Frame
 
--- Create a resize handle (a small square at the top-left corner)
+-- Wait for GUI and Frame to load
+local gui = CoreGui:WaitForChild(guiName)
+local frame = gui:WaitForChild("Frame")
+
+-- Create a resize handle (top-left corner)
 local resizeHandle = Instance.new("Frame")
-resizeHandle.Size = UDim2.new(0, 25, 0, 25) -- bigger square (touch friendly)
+resizeHandle.Size = UDim2.new(0, 25, 0, 25) -- touch friendly
 resizeHandle.Position = UDim2.new(0, 0, 0, 0) -- top-left
 resizeHandle.AnchorPoint = Vector2.new(0, 0)
 resizeHandle.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
@@ -19,28 +22,28 @@ resizeHandle.Parent = frame
 local resizing = false
 local lastPos
 
--- Function to start resizing
+-- Start resizing
 local function beginResize(pos)
 	resizing = true
 	lastPos = pos
 end
 
--- Function to stop resizing
+-- Stop resizing
 local function endResize()
 	resizing = false
 end
 
--- Function to update frame while resizing
+-- Update frame while resizing
 local function updateResize(pos)
 	if resizing and lastPos then
 		local delta = pos - lastPos
 		lastPos = pos
 
-		-- Adjust size and position from the top-left corner
+		-- Adjust size & position relative to top-left
 		frame.Size = UDim2.new(0, frame.Size.X.Offset - delta.X, 0, frame.Size.Y.Offset - delta.Y)
 		frame.Position = UDim2.new(0, frame.Position.X.Offset + delta.X, 0, frame.Position.Y.Offset + delta.Y)
 
-		-- Keep handle stuck to top-left
+		-- Keep handle pinned to top-left
 		resizeHandle.Position = UDim2.new(0, 0, 0, 0)
 	end
 end
